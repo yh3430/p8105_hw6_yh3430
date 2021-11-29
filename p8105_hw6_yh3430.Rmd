@@ -144,9 +144,86 @@ cv_df1_RMSE %>%
 ```
 
 
+## Problem 2
+
+load the dataset
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+Let's try bootstrapping 
+
+Part 1 identify the r squared CI
+
+```{r}
+weather_bootstrap_results =
+  weather_df %>% 
+  bootstrap(n = 5000, id = "strap_number") %>% 
+  mutate(
+    models = map(.x = strap, ~lm(tmax ~ tmin, data = .x)),
+    results = map(models, broom::glance)
+  ) %>% 
+  select(strap_number, results) %>% 
+  unnest(results)
+```
+
+```{r}
+weather_bootstrap_results %>% 
+  janitor::clean_names() %>% 
+  summarize(
+    ci_lower = quantile(r_squared, 0.025),
+    ci_upper = quantile(r_squared, 0.975)
+  )
+```
+
+Part 2 log(β^0∗β^1) CI
+
+```{r}
+weather_bootstrap2_results =
+  weather_df %>% 
+  bootstrap(n = 5000, id = "strap_number") %>% 
+  mutate(
+    models = map(.x = strap, ~lm(tmax ~ tmin, data = .x)),
+    results = map(models, broom::tidy)
+  ) %>% 
+  select(strap_number, results) %>% 
+  unnest(results)
+```
 
 
 
+```{r}
+weather_bootstrap2_results %>% 
+  janitor::clean_names() %>% 
+  select(term, estimate) %>% 
+  pivot_wider(
+    names_from = term,
+    values_from = estimate
+  ) %>%
+  janitor::clean_names() %>% 
+  unnest(tmin) %>% 
+  unnest(intercept) %>% 
+  mutate(
+    log_data = log(intercept*tmin)
+  ) %>% 
+  summarize(
+    ci_lower = quantile(log_data, 0.025), 
+    ci_upper = quantile(log_data, 0.975)
+  )
+
+  
+```
 
 
 
