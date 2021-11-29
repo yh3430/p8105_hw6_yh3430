@@ -1,0 +1,176 @@
+---
+title: "p8105_hw6_yh3430"
+author: "Yu He"
+date: "11/28/2021"
+output: github_document
+---
+Load libraries
+
+```{r}
+library(tidyverse)
+library(viridis)
+library(modelr)
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+```
+
+## Problem 1
+
+## problem 1 model 1
+
+import and clean data 
+
+```{r}
+birthweight_data =
+  read_csv("birthweight.csv") %>% 
+  mutate(
+    babysex = factor(babysex),
+    frace = factor(frace),
+    malform = factor(malform),
+    mrace = factor(mrace)
+  )
+```
+
+Let's check if there is missing values
+
+```{r}
+sum(is.na(birthweight_data))
+```
+
+Let's make a plot to see some data
+
+```{r}
+birthweight_data %>% 
+  ggplot(aes(x = fincome, y = bwt)) +
+  geom_point()
+
+birthweight_data %>% 
+  ggplot(aes(x = ppbmi, y = bwt)) +
+  geom_point()
+```
+
+Let's fit a linear model
+
+```{r}
+fit_df = lm(bwt ~ fincome + ppbmi, data = birthweight_data)
+summary(fit_df)
+```
+
+Diagnostics
+
+```{r}
+add_residuals(birthweight_data, fit_df) %>% 
+  ggplot(aes(x = fincome, y = resid)) +
+  geom_point() +
+  geom_point(aes(x = ppbmi, color = "red"))
+
+add_residuals(birthweight_data, fit_df) %>% 
+  ggplot(aes(x = resid)) +
+  geom_density()
+  
+```
+
+## problem 1 model 2 and 3
+
+model 2 using birth length and gestational age in weeks at predictors
+
+```{r}
+fit_df2 = lm(bwt ~ blength + gaweeks, data = birthweight_data)
+summary(fit_df2)
+```
+
+model 3 using head circumference, length, sex and all interactions
+
+```{r}
+fit_df3 = lm(bwt ~ babysex + bhead + blength + babysex * bhead + babysex * blength + bhead * blength + babysex * bhead * blength, data = birthweight_data)
+summary(fit_df3)
+```
+
+## problem 1 use CV to compare models
+
+```{r}
+cv_df_p1 = 
+  crossv_mc(birthweight_data, 100) %>% 
+  mutate(
+    train = map(train, as_tibble),
+    test = map(test, as_tibble)
+  )
+```
+
+fit models and extract RMSE
+
+```{r}
+cv_df1_RMSE =
+  cv_df_p1 %>% 
+  mutate(
+    mod_df1 = map(.x = train, ~lm(bwt ~ fincome + ppbmi, data = .x)),
+    mod_df2 = map(.x = train, ~lm(bwt ~ blength + gaweeks, data = .x)),
+    mod_df3 = map(.x = train, ~lm(bwt ~ babysex + bhead + blength + babysex * bhead + babysex * blength + bhead * blength + babysex * bhead * blength, data = .x))
+  ) %>% 
+  mutate(
+    rmse_df1 = map2_dbl(.x = mod_df1, .y = test, ~rmse(model = .x, data = .y)),
+    rmse_df2 = map2_dbl(.x = mod_df2, .y = test, ~rmse(model = .x, data = .y)),
+    rmse_df3 = map2_dbl(.x = mod_df3, .y = test, ~rmse(model = .x, data = .y))
+  )
+```
+
+RMSE distribution
+
+```{r}
+cv_df1_RMSE %>% 
+  select(.id, starts_with("rmse")) %>% 
+    pivot_longer(
+    rmse_df1:rmse_df3,
+    names_to = "model", 
+    values_to = "rmse",
+    names_prefix = "rmse_"
+  ) %>% 
+  ggplot(aes(x = model, y = rmse)) + 
+  geom_boxplot()
+  
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
