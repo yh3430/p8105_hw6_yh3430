@@ -122,7 +122,7 @@ fit models and extract RMSE
 cv_df1_RMSE =
   cv_df_p1 %>% 
   mutate(
-    mod_df1 = map(.x = train, ~lm(bwt ~ fincome + ppbmi, data = .x)),
+    mod_df1 = map(.x = train, ~lm(bwt ~ fincome + smoken + ppbmi, data = .x)),
     mod_df2 = map(.x = train, ~lm(bwt ~ blength + gaweeks, data = .x)),
     mod_df3 = map(.x = train, ~lm(bwt ~ babysex + bhead + blength + babysex * bhead + babysex * blength + bhead * blength + babysex * bhead * blength, data = .x))
   ) %>% 
