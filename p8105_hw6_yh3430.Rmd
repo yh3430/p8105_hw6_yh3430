@@ -50,11 +50,15 @@ Let's check if there is missing values
 sum(is.na(birthweight_data))
 ```
 
-Let's make a plot to see some data
+Let's make a plot to see some data. Based on my knowledge, I first select the family monthly income, average number of cigarettes smoked per day during pregnancy, and mother's pre-pregnancy BMI as the predictor. From the figure below, the distribution of fincome and smoken looks good, but the distribution of ppbmi gathered relatively together. I think it is ok to start a simple linear model based on these three factors.
 
 ```{r}
 birthweight_data %>% 
   ggplot(aes(x = fincome, y = bwt)) +
+  geom_point()
+
+birthweight_data %>% 
+  ggplot(aes(x = smoken, y = bwt)) +
   geom_point()
 
 birthweight_data %>% 
@@ -65,7 +69,7 @@ birthweight_data %>%
 Let's fit a linear model
 
 ```{r}
-fit_df = lm(bwt ~ fincome + ppbmi, data = birthweight_data)
+fit_df = lm(bwt ~ fincome + smoken + ppbmi, data = birthweight_data)
 summary(fit_df)
 ```
 
@@ -75,7 +79,9 @@ Diagnostics
 add_residuals(birthweight_data, fit_df) %>% 
   ggplot(aes(x = fincome, y = resid)) +
   geom_point() +
-  geom_point(aes(x = ppbmi, color = "red"))
+  geom_point(aes(x = ppbmi, color = "red")) +
+  geom_point(aes(x = smoken, color = "blue"))
+  
 
 add_residuals(birthweight_data, fit_df) %>% 
   ggplot(aes(x = resid)) +
